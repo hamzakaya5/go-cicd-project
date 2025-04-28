@@ -1,0 +1,31 @@
+# Dockerfile.prod
+
+# Build stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Install git for go mod download
+RUN apk add --no-cache git
+
+# Copy go.mod and go.sum first
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the code and build the app
+COPY . .
+RUN go build -o app
+
+# Run stage
+FROM alpine:3.20
+
+WORKDIR /root/
+
+# Copy only the built binary (small final image)
+COPY --from=builder /app/app .
+
+# Expose the same port
+EXPOSE 8080
+
+# Run the app
+CMD ["./app"]
